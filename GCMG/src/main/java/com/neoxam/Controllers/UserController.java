@@ -15,6 +15,7 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,6 +48,7 @@ public class UserController {
 	private SmtpEmailSender smtpMailSender;
 
 	@GetMapping(value = "/employees")
+	@PreAuthorize("hasAuthority('ADMIN')")
 	public List<UserModel> getAllUsers() {
 		List<User> users = userrep.findAll();
 		if (users.isEmpty())
@@ -66,92 +68,19 @@ public class UserController {
 		return ResponseEntity.ok().body(user);
 	}
 
-	@PostMapping(value = "/employees")
-	public ResponseEntity<?> createUser(@Valid @RequestBody SignupRequest userUP) {
-		if (userrep.existsByEmail(userUP.getEmail())) {
-			return new ResponseEntity<>(new ResponseMessage("Fail -> Email is already in use!"),
-					HttpStatus.BAD_REQUEST);
-		}
-
-		User user = new User(userUP.getNom(), userUP.getPrenom(), userUP.getPassword(), userUP.getEmail());
-		Set<String> strRoles = userUP.getRoles();
-		Set<Role> roles = new HashSet<>();
-		System.out.println("/************************************************************/");
-		System.out.println(strRoles);
-		System.out.println("/************************************************************/");
-
-		if (strRoles == null) {
-			Role userRole = roleRepository.findByRoleName("USER")
-					.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-			roles.add(userRole);
-		} else {
-			strRoles.forEach(role -> {
-				switch (role) {
-				case "ADMIN":
-					Role adminRole = roleRepository.findByRoleName("ADMIN")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(adminRole);
-					Role modRole1 = roleRepository.findByRoleName("MODERATOR")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(modRole1);
-					Role DHRole1 = roleRepository.findByRoleName("DATAHUB")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(DHRole1);
-					Role CRole1 = roleRepository.findByRoleName("COMET")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(CRole1);
-					Role GPRole1 = roleRepository.findByRoleName("GP")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(GPRole1);
-					Role userRole1 = roleRepository.findByRoleName("USER")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(userRole1);
-
-					break;
-				case "MODERATOR":
-					Role modRole = roleRepository.findByRoleName("MODERATOR")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(modRole);
-					break;
-
-				case "DATAHUB":
-					Role DHRole = roleRepository.findByRoleName("DATAHUB")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(DHRole);
-
-					break;
-				case "COMET":
-					Role CRole = roleRepository.findByRoleName("COMET")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(CRole);
-
-					break;
-				case "GP":
-					Role GPRole = roleRepository.findByRoleName("GP")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(GPRole);
-
-					break;
-				default:
-					Role userRole = roleRepository.findByRoleName("USER")
-							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-					roles.add(userRole);
-				}
-			});
-		}
-
-		user.setRole(roles);
-		userrep.save(user);
-		return new ResponseEntity<>(new ResponseMessage("User registered successfully!"), HttpStatus.OK);
-	}
+	
 
 	@PutMapping("/employees/{id}")
+
 	public ResponseEntity<?> updateUser(@PathVariable(value="id") Long id,
 			@Valid @RequestBody SignupRequest userDetails) throws ResourceNotFoundException {
 		User user = userrep.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found for this id :: " + id));
 		if (!(userDetails.getEmail() == null)) {
 			user.setEmail(userDetails.getEmail());
+		}
+		if (!(userDetails.getUsername() == null)) {
+			user.setUsername(userDetails.getUsername());
 		}
 		if (!(userDetails.getPrenom() == null)) {
 			user.setPrenom(userDetails.getPrenom());
@@ -235,13 +164,13 @@ public class UserController {
 		}
 
 		final User updatedUser = userrep.save(user);
-		System.out.println("/*****************************/");
-		System.out.println("/**************kammaaalettt***************/");
-		System.out.println("/*****************************/");
+		
 		return ResponseEntity.ok(updatedUser);
 	}
 
 	@PutMapping("/employees/accepter/{id}")
+	@PreAuthorize("hasAuthority('ADMIN')")
+
 	public ResponseEntity<User> Accept(@PathVariable(value = "id") Long id) throws ResourceNotFoundException {
 		User user = userrep.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found for this id :: " + id));
@@ -260,6 +189,8 @@ public class UserController {
 	}
 
 	@DeleteMapping("/employees/{id}")
+	@PreAuthorize("hasAuthority('ADMIN')")
+
 	public Map<String, Boolean> deleteUser(@PathVariable(value = "id") Long id) throws ResourceNotFoundException {
 		User user = userrep.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found for this id :: " + id));
@@ -270,6 +201,8 @@ public class UserController {
 		return response;
 	}
 	@DeleteMapping("/DeleteRole/{id}/{UrRole}")
+	@PreAuthorize("hasAuthority('ADMIN')")
+
 	public Map<String, Boolean> deleteRole(@PathVariable(value = "id") Long id, @PathVariable(value = "UrRole") String UrRole) throws ResourceNotFoundException {
 		User user = userrep.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found for this id :: " + id));

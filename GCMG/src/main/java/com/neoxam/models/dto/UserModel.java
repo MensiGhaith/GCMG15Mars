@@ -13,6 +13,21 @@ public class UserModel {
 	private String nom;
 	private String prenom;
 	private String email;
+	private String username;
+	public String getUsername() {
+		return username;
+	}
+
+
+
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+
+
+
 	private boolean active;
 	private Set<String> roles=null;
 	
@@ -24,6 +39,7 @@ public class UserModel {
 		this.nom=user.getNom();
 		this.prenom=user.getPrenom();
 		this.setEmail(user.getEmail());
+		this.username=(user.getUsername());
 		if (user.getRoles().isEmpty()) 
 			return;
 		roles = new HashSet();

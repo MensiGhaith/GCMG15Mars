@@ -26,6 +26,9 @@ public class User {
 	private String nom;
 	@Column(nullable = false,name="Prenom")
 	private String prenom;
+	@Column(nullable = false,name="username")
+	private String username;
+	
 	@Column(nullable = false,name="Password")
 	private String password;
 	@NaturalId(mutable = false)
@@ -39,12 +42,13 @@ public class User {
 	private boolean active=false;
 	public User() {}
 	
-	public User(String nom, String prenom, String password, String email) {
+	public User(String nom, String prenom, String password, String email,String username) {
 		super();
 		this.nom = nom;
 		this.prenom = prenom;
 		this.password = password;
 		this.email = email;
+		this.username=username;
 	
 	}
 
@@ -92,5 +96,12 @@ public class User {
 	}
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
 	}
 }
