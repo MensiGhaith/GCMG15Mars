@@ -5,6 +5,7 @@ package com.neoxam.security.services;
 
 import java.io.ByteArrayOutputStream;
 
+
 import java.io.IOException;
 import java.sql.Date;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import javax.mail.MessagingException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.parsing.Problem;
@@ -24,7 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.neoxam.SendingEmail.SmtpEmailSender;
 import com.neoxam.models.DBFile;
+import com.neoxam.models.UserUploaded;
 import com.neoxam.repository.DBFileRepository;
 
 
@@ -34,22 +38,56 @@ public class FileUtils {
 	@Autowired
 	DBFileRepository fileRepo;
 	
-	public boolean uploadImage(MultipartFile file,String tag,String dep) {
+	@Autowired
+	private SmtpEmailSender smtpMailSender;
+	//@Autowired
+	//private UURepository uuRep;
+	
+	@SuppressWarnings("null")
+	public boolean uploadImage(MultipartFile file,String tag,String dep,String username) {
 		DBFile image = createFile(file);
-		if (image == null)
-			return false;
+		
+		
+		
+		if(fileRepo.existsByNameAndDepartement(image.getName(),dep)  )
+		{
+			final Optional<DBFile> retrievedFile = fileRepo.findByNameAndDepartement(image.getName(),dep);
+		DBFile Myfile=retrievedFile.get();
+	
+			fileRepo.delete(Myfile);
+			
+			
+		
+			
+		}
+		
+		
+		
 		image.setFileTag(tag);
 		image.setDepartement(dep);
 		image.setActive(true);
 		fileRepo.save(image);
+		try {
+			smtpMailSender.SendToAdmin("Nouveau Fichier", "Bonjour", username, image.getName(),dep);
+		} catch (MessagingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//UserUploaded UploadedFile = new UserUploaded(id,image.getId());
+	
+		
+		//uuRep.save(UploadedFile);
+		
+		
 		return true;
+	
 	}
 	
-	public DBFile getFile( String fileTag) throws IOException {
+	public DBFile getFile( Long id) throws IOException {
 
-		final Optional<DBFile> retrievedFile = fileRepo.findByFileTag(fileTag);
+		final Optional<DBFile> retrievedFile = fileRepo.findById(id);
 		DBFile img = new DBFile(retrievedFile.get().getName(), retrievedFile.get().getFileType(),
-				decompressBytes(retrievedFile.get().getFileContent()),retrievedFile.get().getAddedAt(),retrievedFile.get().getFileTag(),retrievedFile.get().getDepartement());
+				decompressBytes(retrievedFile.get().getFileContent()),retrievedFile.get().getAddedAt(),retrievedFile.get().getFileTag(),retrievedFile.get().getDepartement(),retrievedFile.get().isActive());
 		return img;
 	}
 

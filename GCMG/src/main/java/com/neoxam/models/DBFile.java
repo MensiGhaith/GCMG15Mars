@@ -37,13 +37,14 @@ public class DBFile {
 
 	public DBFile(){}
 
-	public DBFile(String name, String fileType, byte[] fileContent, Date addedAt, String tag,String departement) {
+	public DBFile(String name, String fileType, byte[] fileContent, Date addedAt, String tag,String departement, Boolean active) {
 		this.fileContent = fileContent;
 		this.fileType = fileType;
 		this.name = name;
 		this.addedAt = addedAt;
 		this.fileTag = tag;
 		this.departement=departement;
+		this.active=active;
 	}
 
 	public byte[] getFileContent() {

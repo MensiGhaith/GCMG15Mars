@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -35,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.neoxam.exception.ResourceNotFoundException;
 import com.neoxam.models.DBFile;
+import com.neoxam.models.ResponseMessage;
 import com.neoxam.models.Role;
 import com.neoxam.models.User;
 import com.neoxam.models.dto.FileModel;
@@ -56,16 +58,16 @@ public class FilesController {
 
 
 	@RequestMapping(value = "/do", method = RequestMethod.POST, consumes = { "multipart/form-data" })
-	public boolean upload(@RequestParam("file") MultipartFile file,@RequestParam("tag") String tag,@RequestParam("dep") String dep) {
+	public boolean upload(@RequestParam("file") MultipartFile file,@RequestParam("tag") String tag,@RequestParam("dep") String dep,@RequestParam("username") String username) {
 		
 		
-		return fileUtils.uploadImage(file,tag,dep);
+		return fileUtils.uploadImage(file,tag,dep,username);
 	}
 	
-	@GetMapping(path = { "/get/{imageName}" })
-	public DBFile recupFile(@PathVariable("imageName") String fileName) throws IOException {
+	@GetMapping(path = { "/get/{id}" })
+	public DBFile recupFile(@PathVariable("id") Long id) throws IOException {
 
-		return fileUtils.getFile(fileName);
+		return fileUtils.getFile(id);
 	}
 	
 	
@@ -89,14 +91,40 @@ public class FilesController {
 			@Valid @RequestBody FileModel fileDetails) throws ResourceNotFoundException {
 		DBFile file = fileRepo.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("File not found for this id :: " + id));
+		String filename =file.getName();
+		String dep;
+		if(fileDetails.getDepartement()==null) {
+			dep=file.getDepartement();
+		}else {
+			dep=fileDetails.getDepartement();
+		}
 		if (!(fileDetails.getDepartement()== null)) {
 			file.setDepartement(fileDetails.getDepartement());
 		}
 		if (!(fileDetails.getTag()== null)) {
 			file.setFileTag(fileDetails.getTag());
 		}
-		if (!(fileDetails.getNom()== null)) {
-			file.setName(fileDetails.getNom());
+		if (!(fileDetails.getNom()== null)  ) {
+			if(!(fileDetails.getNom().equalsIgnoreCase(filename))) {
+				 if ( (fileRepo.existsByNameAndDepartement(fileDetails.getNom(), dep)) & (fileDetails.getNom()!=filename) ) {
+											return new ResponseEntity<>(new ResponseMessage("Fail ->Name is  already in use!"),
+								HttpStatus.BAD_REQUEST);
+					}
+				 else {
+						file.setName(fileDetails.getNom());
+						 System.out.println(fileRepo.existsByNameAndDepartement(fileDetails.getNom(), dep));
+						 System.out.println("------------------------------------------------------");
+						 System.out.println(fileDetails.getNom()!=filename);
+				 }
+				
+			}
+			else {
+				file.setName(fileDetails.getNom());
+				
+			}
+			
+			
+			
 		}
 		if (fileDetails.isActive() != file.isActive()) {
 			file.setActive(fileDetails.isActive());
@@ -119,17 +147,14 @@ public class FilesController {
 		response.put("deleted", Boolean.TRUE);
 		return response;
 	}
-	  @GetMapping("/downloadFile/{fileId}")
-	    public ResponseEntity<?> downloadFile(@PathVariable Long fileId) {
-	        // Load file from database
-	        Optional<DBFile> dbFile = fileRepo.findById(fileId);
+	
+	@GetMapping(value = "/files/{id}")
+	public ResponseEntity<DBFile> getFileById(@PathVariable(value = "id") Long idU) throws ResourceNotFoundException {
+		DBFile file = fileRepo.findById(idU)
 
-	        return ResponseEntity.ok()
-	                .contentType(MediaType.parseMediaType("application/octet-stream"))
-	                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + dbFile.get().getName() + "\"")
-	                .body(new ByteArrayResource(dbFile.get().getFileContent()));
-	    }
-
+				.orElseThrow(() -> new ResourceNotFoundException("file not found for this id :: " + idU));
+		return ResponseEntity.ok().body(file);
+	}
 	
 	
 }
