@@ -100,9 +100,13 @@
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
+				    <configuration>
+       <finalName>pgc-app</finalName>
+    </configuration>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
+	
 
 </project>
